@@ -1,0 +1,15 @@
+# Кластер для КТ2: одна нода, порты 80/443 ingress-контроллера проброшены на 8080/8443 хоста
+# (80 на моей машине занят другим проектом)
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    labels:
+      ingress-ready: "true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP

@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html
+data:
+  index.html: |
+    <!doctype html>
+    <html lang="ru">
+    <head>
+      <meta charset="utf-8">
+      <title>КТ2 frontend</title>
+      <style>
+        body { font-family: sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }
+        pre { background: #f4f4f4; padding: 12px; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <h1>КТ2: frontend на nginx</h1>
+      <p>Эту страницу отдаёт frontend-svc. Ниже ответ backend-svc на запрос <code>/api</code> через тот же Ingress:</p>
+      <pre id="api">загрузка...</pre>
+      <script>
+        fetch("/api")
+          .then(r => r.json())
+          .then(data => { document.getElementById("api").textContent = JSON.stringify(data, null, 2); })
+          .catch(err => { document.getElementById("api").textContent = "ошибка: " + err; });
+      </script>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.28-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+      volumes:
+        - name: html
+          configMap:
+            name: frontend-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
